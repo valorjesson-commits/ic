@@ -13,6 +13,8 @@ jobs:
   check-queue:
     name: Check Workflow Wait Queue
     runs-on: ubuntu-latest
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
     steps:
 
       - name: Check for workflows in wait queue
@@ -57,9 +59,11 @@ jobs:
 
       - name: Post Slack Notification
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 # v1.25.0
-        if: steps.check.outputs.message != ''
+        if: steps.check.outputs.message != '' && env.SLACK_BOT_TOKEN != ''
         with:
           channel-id: eng-idx-alerts
           slack-message: ${{ steps.check.outputs.message }}
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_API_TOKEN }}
+
+      - name: Warn when Slack notification cannot be sent
+        if: steps.check.outputs.message != '' && env.SLACK_BOT_TOKEN == ''
+        run: echo "::warning::SLACK_API_TOKEN is not configured; Slack notification was skipped."
